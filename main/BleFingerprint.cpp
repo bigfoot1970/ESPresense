@@ -19,6 +19,7 @@
 #include "rssi.h"
 #include "string_utils.h"
 #include "util.h"
+#include "TileResolver.h"
 
 SemaphoreHandle_t BleFingerprint::fieldMutex = nullptr;
 
@@ -234,6 +235,19 @@ void BleFingerprint::fingerprintServiceAdvertisements(const Ble::Advert *adverti
 #endif
         if (Ble::uuidEq(uuid, tileUUID)) {
             asRssi = BleFingerprintCollection::rxRefRssi + TILE_TX;
+            // Rotating-MAC Tiles: match the rolling privateId against configured seeds.
+            if (idType < ID_TYPE_KNOWN_TILE && TileResolver::KeyCount()) {
+                for (size_t j = 0; j < advertisedDevice->getServiceDataCount(); j++) {
+                    if (!Ble::uuidEq(advertisedDevice->getServiceDataUUID(j), tileUUID)) continue;
+                    std::string sd = advertisedDevice->getServiceData(j);
+                    const char *tname = TileResolver::Resolve(reinterpret_cast<const uint8_t *>(sd.data()), sd.size(), millis());
+                    if (tname) {
+                        if (setId(std::string("tile:") + tname, ID_TYPE_KNOWN_TILE))
+                            Log.printf("Tile %s resolved at %s (ctr search total %u)\n", tname, getMac().c_str(), (unsigned)TileResolver::FullSearches());
+                        return;
+                    }
+                }
+            }
             setId("tile:" + getMac(), ID_TYPE_TILE);
             return;
         } else if (Ble::uuidEq(uuid, sonosUUID)) {

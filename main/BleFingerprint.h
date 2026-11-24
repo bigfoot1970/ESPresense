@@ -61,6 +61,7 @@
 #define ID_TYPE_IBEACON short(180)
 #define ID_TYPE_ONEKEY short(185)  // above iBeacon: upgrades a tag keyed as iBeacon before its ONE-KEY frame was heard
 #define ID_TYPE_KNOWN_IRK short(200)
+#define ID_TYPE_KNOWN_TILE short(201)  // Tile resolved by its rolling privateId (known_tile_seeds)
 #define ID_TYPE_KNOWN_MAC short(210)
 #define ID_TYPE_ALIAS short(250)
 

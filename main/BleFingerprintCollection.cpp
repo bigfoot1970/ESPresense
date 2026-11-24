@@ -1,4 +1,6 @@
 #include "BleFingerprintCollection.h"
+#include "TileResolver.h"
+#include "Logger.h"
 
 #include "IBeacon.h"
 
@@ -137,6 +139,7 @@ std::string include{DEFAULT_INCLUDE},
        query{DEFAULT_QUERY},
        knownMacs{DEFAULT_KNOWN_MACS},
        knownIrks{DEFAULT_KNOWN_IRKS},
+       knownTileSeeds{},
        countIds{DEFAULT_COUNT_IDS};
 float skipDistance = DEFAULT_SKIP_DISTANCE,
       maxDistance = DEFAULT_MAX_DISTANCE,
@@ -364,6 +367,9 @@ bool Config(std::string &id, std::string &json) {
 void ConnectToWifi(bool updating) {
     knownMacs = Settings::string("known_macs", DEFAULT_KNOWN_MACS, "Known BLE mac addresses (no colons, space separated)");
     knownIrks = Settings::string("known_irks", DEFAULT_KNOWN_IRKS, "Known BLE identity resolving keys, should be 32 hex chars space separated");
+    knownTileSeeds = Settings::string("known_tile_seeds", "", "Rotating-MAC Tiles: name:32-hex-seed, space separated (applies after restart)");
+    TileResolver::SetHmac(TileResolver::HmacMbedtls);
+    Log.printf("Tile seeds loaded: %u\n", (unsigned)TileResolver::Configure(knownTileSeeds));
 
     query = Settings::string("query", DEFAULT_QUERY, "Query device ids for characteristics (eg. flora:)");
     requeryMs = Settings::integer("requery_ms", 30, 3600, DEFAULT_REQUERY_MS / 1000, "Requery interval in seconds") * 1000;
@@ -462,6 +468,9 @@ bool Command(std::string &command, std::string &pay) {
     } else if (command == "known_irks") {
         knownIrks = pay.empty() ? DEFAULT_KNOWN_IRKS : pay;
         spurt("/known_irks", knownIrks);
+    } else if (command == "known_tile_seeds") {
+        knownTileSeeds = pay;
+        spurt("/known_tile_seeds", knownTileSeeds);  // read at boot; send restart to apply
     } else if (command == "count_ids") {
         countIds = pay.empty() ? DEFAULT_COUNT_IDS : pay;
         spurt("/count_ids", countIds);

@@ -62,7 +62,7 @@ extern TCallbackFingerprint onLeft;
 extern TCallbackFingerprint onCountAdd;
 extern TCallbackFingerprint onCountDel;
 
-extern std::string include, exclude, query, knownMacs, knownIrks, countIds;
+extern std::string include, exclude, query, knownMacs, knownIrks, knownTileSeeds, countIds;
 extern float skipDistance, maxDistance, absorption, countEnter, countExit;
 extern int8_t rxRefRssi, rxOffsetRssi, txRefRssi, maxDivisor;
 extern int forgetMs, skipMs, rssiWindowMs, countMs, requeryMs, maxFingerprints;
