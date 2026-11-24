@@ -158,7 +158,10 @@ bool sendTelemetry(unsigned int totalSeen, unsigned int totalFpSeen, unsigned in
     doc["bleStack"] = bleStack;
     if (auto left = Mqtt::stackLeft()) doc["mqttStack"] = left;
 
-    if (pub(teleTopic.c_str(), 0, false, doc)) return true;
+    if (pub(teleTopic.c_str(), 0, false, doc)) {
+        lastTeleOkMillis = millis();
+        return true;
+    }
 
     teleFails++;
     log_e("Error after 10 tries sending telemetry (%d times since boot)", teleFails);
@@ -630,6 +633,28 @@ void loop() {
         // free block was already under the 2312 byte request that kept failing.
         if (freeHeap < 20000) Log.printf("Low memory: %lu bytes free, largest block %lu\n", static_cast<unsigned long>(freeHeap), static_cast<unsigned long>(maxAlloc));
         Updater::Loop();
+
+        // wd: self-reset for a stuck MQTT client (v5.0.0b8 flapping). Two checks:
+        //  1. no telemetry delivered for 5 min (only when telemetry is enabled)
+        //  2. no MQTT session that stayed up 60 s anywhere in the last 10 min
+        {
+            static unsigned long connectedAt = 0, lastStable = millis();
+            static bool wasConnected = false;
+            unsigned long t = millis();
+            bool c = Mqtt::connected();
+            if (c && !wasConnected) connectedAt = t;
+            wasConnected = c;
+            if (c && t - connectedAt >= 60000UL) lastStable = t;
+            if (lastTeleOkMillis == 0) lastTeleOkMillis = t;
+            if (publishTele && t - lastTeleOkMillis > 5UL * 60000UL) {
+                Log.println("wd: no telemetry delivered for 5 min, restarting");
+                esp_restart();
+            }
+            if (t - lastStable > 10UL * 60000UL) {
+                Log.println("wd: no stable MQTT session for 10 min, restarting");
+                esp_restart();
+            }
+        }
 
         // ponytail: watchdog, not a leak fix. A heap-starved node limps forever (mqtt and
         // telemetry both fail, nothing recovers), so reboot after 60s stuck below the

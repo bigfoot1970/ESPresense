@@ -54,6 +54,7 @@ TaskHandle_t scanTaskHandle;
 
 unsigned long updateStartedMillis = 0;
 unsigned long lastTeleMillis = 0;
+unsigned long lastTeleOkMillis = 0;  // wd: last telemetry actually handed to MQTT
 int reconnectTries = 0;
 int teleFails = 0;
 int reportFailed = 0;
