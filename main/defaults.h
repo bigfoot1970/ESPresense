@@ -26,7 +26,7 @@
 
 
 #define BLE_SCAN_INTERVAL 0x80
-#define BLE_SCAN_WINDOW 0x80
+#define BLE_SCAN_WINDOW 0x60  // ble75: listen 60 of every 80 ms, leave Wi-Fi a 20 ms slot
 
 #define MAX_TIME_SLOTS 64
 
