@@ -5,6 +5,7 @@
 #include "esp_partition.h"
 
 #include "SettingsMigration.h"
+#include "McastCounter.h"
 
 // app0 size tells a Tasmota v11 layout (0x1D0000, left by SwitchbOTA) apart from ESPresense's own (0x1E0000)
 static const esp_partition_t *app0Partition() {
@@ -157,6 +158,18 @@ bool sendTelemetry(unsigned int totalSeen, unsigned int totalFpSeen, unsigned in
     doc["loopStack"] = uxTaskGetStackHighWaterMark(nullptr);
     doc["bleStack"] = bleStack;
     if (auto left = Mqtt::stackLeft()) doc["mqttStack"] = left;
+    McastCounter::Ensure();
+    {
+        auto mc = McastCounter::Take();
+        if (mc.windowMs) {
+            doc["mcWin"] = mc.windowMs;
+            doc["rxF"] = mc.rx;
+            doc["mcast"] = mc.mcast;
+            doc["bcast"] = mc.bcast;
+            doc["mcBytes"] = mc.mcBytes;
+            if (!mc.top.empty()) doc["mcTop"] = mc.top;
+        }
+    }
 
     if (pub(teleTopic.c_str(), 0, false, doc)) {
         lastTeleOkMillis = millis();
